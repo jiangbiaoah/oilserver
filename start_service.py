@@ -106,6 +106,7 @@ def _conn_process_device(conn, addr):
 
             # 设备第一次上线的操作
             if firstonlineflag == 0:
+                _del_device_conn_with_wellid(wellid)
                 _store_device_conn(conn, addr, wellid)
                 data_process.inform_on_off_line(wellid, type='online')
                 firstonlineflag = 1
@@ -213,6 +214,7 @@ def _conn_process_wechat(conn, addr):
         # 1.2.使用被控对象的的conn发送控制命令
         logging.debug("使用Device的conn转发控制码...")
         device_conn = _get_device_conn(wellid_controled)
+        logging.debug("device_conn = {}".format(device_conn))
         if device_conn is None:
             # 返回用户不在线信息
             dict = {}
@@ -374,7 +376,6 @@ def _del_device_conn(conn):
     for conn_temp in device_conns:
         if conn_temp[0] is conn:        # ？？？is正确吗
             # 1.关闭socket连接
-            conn_temp[0].close()
             try:
                 conn.close()
                 logging.info("已关闭device的conn连接")
@@ -383,10 +384,36 @@ def _del_device_conn(conn):
 
             # 2.删除保存的连接
             device_conns.remove(conn_temp)
-            mutex.release()
-            return
+            # mutex.release()
+            # return
     mutex.release()
-    logging.debug("_del_device_conn():无此连接conn，无法完成删除")
+    # logging.debug("_del_device_conn():无此连接conn，无法完成删除")
+    return
+
+
+def _del_device_conn_with_wellid(wellid):
+    """
+    由于每次上报的数据都使用的是新的TCP连接，并且旧连接并不会被正常关闭，导致device_conns中保存了大量的旧连接，需要将其删除
+    :param wellid:
+    :return:
+    """
+    logging.debug("准备删除该设备的未正常释放的conn连接...")
+    mutex.acquire()
+    for conn_temp in device_conns:
+        if conn_temp[2] == wellid:
+            # 1.关闭socket连接
+            try:
+                conn_temp[0].close()
+                logging.info("（旧连接）已关闭device的conn旧连接")
+            except Exception:
+                logging.info("conn连接关闭异常，信息如下：", Exception)
+
+            # 2.删除保存的连接
+            device_conns.remove(conn_temp)
+            # mutex.release()
+            # return
+    mutex.release()
+    # logging.debug("_del_device_conn():无此连接conn，无法完成删除")
     return
 
 
