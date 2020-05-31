@@ -13,3 +13,8 @@ $ sh oilappserver.sh start
 $ sh oilappserver.sh stop
 
 $ sh oilappserver.sh restart
+
+## 查看实时日志
+开启服务器后，日志文件保存在了nohup.out中，使用如下命令查看实时日志：
+
+$ tail -f nohup.out
