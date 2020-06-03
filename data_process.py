@@ -113,9 +113,9 @@ def _device_firstonline(data_dict):
     sensor_05_sensor = (d_id, 5, '皮带烧', 0, 0, 0, '', '', create_time, update_time, 1, '')
     sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_07_sensor = (d_id, 7, '设备运行态', data_dict['model'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'mA')
-    sensor_09_sensor = (d_id, 9, '下冲程电流', data_dict['lowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'mA')
-    sensor_10_sensor = (d_id, 10, '运行电流', data_dict['nowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'mA')
+    sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
+    sensor_09_sensor = (d_id, 9, '下冲程电流', data_dict['lowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
+    sensor_10_sensor = (d_id, 10, '运行电流', data_dict['nowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
     sensor_11_sensor = (d_id, 11, '平衡率', balance_rate, 0, 0, '', '', create_time, update_time, 1, '')
     sensor_12_sensor = (d_id, 12, '油压', data_dict['oil_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA')
     sensor_13_sensor = (d_id, 13, '套压', data_dict['tao_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA')
@@ -321,20 +321,20 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
     if sensor_is_available[8] == 1:  # 上冲程电流
         if data_dict['upcurrent'] < trigger_info[8][6]:
             ex_8 = 1
-            desc[8] = '上冲程电流为{}，小于正常范围({}~{})'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
+            desc[8] = '上冲程电流为{}A，小于正常范围({}A~{}A)'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
         elif data_dict['upcurrent'] > trigger_info[8][7]:
             ex_8 = 1
-            desc[8] = '上冲程电流为{}，大于正常范围({}~{})'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
+            desc[8] = '上冲程电流为{}A，大于正常范围({}A~{}A)'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
         sensor_08_sensor = [data_dict['upcurrent'], ex_8, update_time, d_id, 8]
 
     ex_9 = 0
     if sensor_is_available[9] == 1:  # 下冲程电流
         if data_dict['lowcurrent'] < trigger_info[9][6]:
             ex_9 = 1
-            desc[9] = '下冲程电流为{}，小于正常范围({}~{})'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
+            desc[9] = '下冲程电流为{}A，小于正常范围({}A~{}A)'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
         elif data_dict['lowcurrent'] > trigger_info[9][7]:
             ex_9 = 1
-            desc[9] = '下冲程电流为{}，大于正常范围({}~{})'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
+            desc[9] = '下冲程电流为{}A，大于正常范围({}A~{}A)'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
         sensor_09_sensor = [data_dict['lowcurrent'], ex_9, update_time, d_id, 9]
 
     ex_10 = 0
@@ -463,9 +463,19 @@ def decode_binary_data(data):
     dict['wellstate'] = data[10]    # 开/关井状态
     dict['model'] = data[11]  # 自动/手动模式
     dict['manual_switch_state'] = data[12]              # 手动开关状态
-    dict['nowcurrent'] = data[13] + 0.1 * data[14]      # 当前电流信息
-    dict['upcurrent'] = data[15] + 0.1 * data[16]       # 上死点电流信息
-    dict['lowcurrent'] = data[17] + 0.1 * data[18]      # 下死点电流信息
+    # dict['nowcurrent'] = data[13] + 0.1 * data[14]      # 当前电流信息
+    # dict['upcurrent'] = data[15] + 0.1 * data[16]       # 上死点电流信息
+    # dict['lowcurrent'] = data[17] + 0.1 * data[18]      # 下死点电流信息
+
+    # 修改：实际电流 = （采集到的电流 - 4）*100 / 16
+    dict['nowcurrent'] = Decimal((data[13] + 0.1 * data[14] - 4) * 100 / 16).quantize(Decimal('0.00'))      # 当前电流信息
+    dict['upcurrent'] = Decimal((data[15] + 0.1 * data[16] - 4) * 100 / 16).quantize(Decimal('0.00'))       # 上死点电流信息
+    dict['lowcurrent'] = Decimal((data[17] + 0.1 * data[18] - 4) * 100 / 16).quantize(Decimal('0.00'))      # 下死点电流信息
+    logging.debug("收集到的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
+                  .format(data[13] + 0.1 * data[14], data[15] + 0.1 * data[16], data[17] + 0.1 * data[18]))
+    logging.debug("转换后的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
+                  .format(dict['nowcurrent'], dict['upcurrent'], dict['lowcurrent']))
+
     dict['bell_exception'] = data[19]                   # 曲柄销子
     dict['oil_pressure'] = data[20] + 0.1 * data[21]    # 油压
     dict['tao_pressure'] = data[22] + 0.1 * data[23]    # 套压
