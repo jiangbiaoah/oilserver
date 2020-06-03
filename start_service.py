@@ -46,7 +46,8 @@ def _conn_process_device(conn, addr):
     :return:
     """
     wellid = None
-    firstonlineflag = 0
+    firstonlineflag = True
+    need_settime = True
     latest_status = {}      # 记录设备当前的状态，包含所有上报的状态
 
     while True:
@@ -64,12 +65,15 @@ def _conn_process_device(conn, addr):
         logging.info("收到device信息：{}".format(data))
 
         # 设备第一次上线的操作：发送对时命令
-        if firstonlineflag == 0:
+        # 每个连接线程收到的第一个数据包都不会被处理，仅仅会触发服务器下发对时命令，对时命令下发后收到的报文视为第一个有用报文
+        if firstonlineflag is True and need_settime is True:
             nowtime = time.localtime()
             send_data = b'\xaa\xaa\x06\x00\x00\x00\x00\x00\x00' + \
                         bytes([nowtime.tm_hour, nowtime.tm_min]) + b'\x55\x55'
             conn.send(send_data)
             logging.info("已向新Device发送对时命令：{}".format(send_data))
+            need_settime = False
+            continue
 
         # 2.处理数据
         if len(data) == 0:
@@ -81,7 +85,7 @@ def _conn_process_device(conn, addr):
             break
 
         if len(data) < 3:
-            logging.debug("收到的信息无效")
+            logging.debug("收到的信息无效: len(data) < 3")
             continue
 
         if data[0:2] == b'\xcc\xcc':        # 心跳包
@@ -102,21 +106,28 @@ def _conn_process_device(conn, addr):
             # 1.接收数据
             data_dict = data_process.decode_binary_data(data)
             wellid = data_dict['wellid']
-            # _store_device_conn(conn, addr, wellid)    # 移到了第一次上线的操作中
+
+            """
+            判断设备是否为第一次上线
+            之所以加上这个判断，是因为设备可能使用的新的TCP连接，旧连接并没有释放
+            """
+            if _get_device_conn(wellid) is not None:        # 存在该设备对应的连接
+                if _get_device_conn(wellid) is not conn:    # 该连接不是此连接
+                    logging.debug("设备{}使用了一个新的TCP连接，而不是已存在的旧的TCP连接".format(wellid))
+                    _del_device_conn_with_wellid(wellid)
+                    _store_device_conn(conn, addr, wellid)
+                    firstonlineflag = False
 
             # 设备第一次上线的操作
-            if firstonlineflag == 0:
-                _del_device_conn_with_wellid(wellid)
+            if firstonlineflag is True:
+                # _del_device_conn_with_wellid(wellid)
                 _store_device_conn(conn, addr, wellid)
                 data_process.inform_on_off_line(wellid, type='online')
-                firstonlineflag = 1
+                firstonlineflag = False
 
             # 状态切换提醒
             if len(latest_status) != 0:
-                try:
-                    data_process.inform_on_off_line(wellid, type='status_switch', state_old=latest_status, state_new=data_dict)
-                except:
-                    pass
+                data_process.inform_on_off_line(wellid, type='status_switch', state_old=latest_status, state_new=data_dict)
             latest_status = data_dict
 
             # ========================================
