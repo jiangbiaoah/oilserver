@@ -434,6 +434,7 @@ def server_thread():
     用户在进程中开启多线程
     :return:
     """
+
     sqloperate.update_wellid_to_deviceid()
 
     # socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -441,6 +442,9 @@ def server_thread():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((config.server_ip, config.server_port))
     sock.listen()
+
+    # 服务器打开和关闭时，以报警信息通知微信
+    data_process.start_service_inform()
 
     # 控制信道使用多线程同时接收多个用户的连接
     while True:

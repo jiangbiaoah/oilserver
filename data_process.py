@@ -9,6 +9,26 @@ import json
 import re
 
 
+def start_service_inform():
+    """
+    服务器打开和关闭时，以报警信息通知微信
+    :return:
+    """
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    inform_infos = [[0, 0, 0, '服务器打开和关闭', '服务器已打开', [0, 0, 0]]]
+    notify_infos = [[0, '', 0, 0, '服务器', 0, '状态值', 0,
+                     '服务器已打开', '服务器已打开', current_time]]
+    inform_wechat(inform_infos, notify_infos)
+
+
+def stop_service_inform():
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    inform_infos = [[0, 0, 0, '服务器打开和关闭', '服务器已关闭', [0, 0, 0]]]
+    notify_infos = [[0, '', 0, 0, '服务器', 0, '状态值', 0,
+                     '服务器已关闭', '服务器已关闭', current_time]]
+    inform_wechat(inform_infos, notify_infos)
+
+
 def process_online(data):
     """
     设备上线/在线：处理设备上报的数据
