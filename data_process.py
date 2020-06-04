@@ -317,24 +317,24 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
         #     desc[7] = '切换成了手动模式'
         sensor_07_sensor = [data_dict['model'], ex_7, update_time, d_id, 7]  # 不报警
 
-    ex_8 = 0
+    ex_8 = 0    # 上下冲程电流无论多大多小都不报警，只在平衡率异常时才报警，因此ex_8 = 0,不会为1。
     if sensor_is_available[8] == 1:  # 上冲程电流
         if data_dict['upcurrent'] < trigger_info[8][6]:
-            ex_8 = 1
-            desc[8] = '上冲程电流为{}A，小于正常范围({}A~{}A)'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
+            # ex_8 = 1
+            desc[8] = '上冲程电流为{}A，小于正常范围({}A~{}A).'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
         elif data_dict['upcurrent'] > trigger_info[8][7]:
-            ex_8 = 1
-            desc[8] = '上冲程电流为{}A，大于正常范围({}A~{}A)'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
+            # ex_8 = 1
+            desc[8] = '上冲程电流为{}A，大于正常范围({}A~{}A).'.format(data_dict['upcurrent'], trigger_info[8][6], trigger_info[8][7])
         sensor_08_sensor = [data_dict['upcurrent'], ex_8, update_time, d_id, 8]
 
     ex_9 = 0
     if sensor_is_available[9] == 1:  # 下冲程电流
         if data_dict['lowcurrent'] < trigger_info[9][6]:
-            ex_9 = 1
-            desc[9] = '下冲程电流为{}A，小于正常范围({}A~{}A)'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
+            # ex_9 = 1
+            desc[9] = '下冲程电流为{}A，小于正常范围({}A~{}A).'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
         elif data_dict['lowcurrent'] > trigger_info[9][7]:
-            ex_9 = 1
-            desc[9] = '下冲程电流为{}A，大于正常范围({}A~{}A)'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
+            # ex_9 = 1
+            desc[9] = '下冲程电流为{}A，大于正常范围({}A~{}A).'.format(data_dict['lowcurrent'], trigger_info[9][6], trigger_info[9][7])
         sensor_09_sensor = [data_dict['lowcurrent'], ex_9, update_time, d_id, 9]
 
     ex_10 = 0
@@ -345,40 +345,44 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
     if sensor_is_available[11] == 1:  # 平衡率
         if balance_rate < trigger_info[11][6]:
             ex_11 = 1
-            desc[11] = '平衡率为{}%，低于正常范围({}%~{}%)'.format(balance_rate, trigger_info[11][6], trigger_info[11][7])
+            desc[11] = '平衡率为{}%，低于正常范围({}%~{}%).[注：{}% = ({}A / {}A) * 100%]'.format(
+                balance_rate, trigger_info[11][6], trigger_info[11][7],
+                balance_rate, data_dict['lowcurrent'], data_dict['upcurrent'])
         elif balance_rate > trigger_info[11][7]:
             ex_11 = 1
-            desc[11] = '平衡率为{}%，高于正常范围({}%~{}%)'.format(balance_rate, trigger_info[11][6], trigger_info[11][7])
+            desc[11] = '平衡率为{}%，高于正常范围({}%~{}%).[注：{}% = ({}A / {}A) * 100%]'.format(
+                balance_rate, trigger_info[11][6], trigger_info[11][7],
+                balance_rate, data_dict['lowcurrent'], data_dict['upcurrent'])
         sensor_11_sensor = [balance_rate, ex_11, update_time, d_id, 11]
 
     ex_12 = 0
     if sensor_is_available[12] == 1:  # 油压
         if data_dict['oil_pressure'] < trigger_info[12][6]:
             ex_12 = 1
-            desc[12] = '油压为{}，低于正常范围({}~{})'.format(data_dict['oil_pressure'], trigger_info[12][6], trigger_info[12][7])
+            desc[12] = '油压为{}，低于正常范围({}~{}).'.format(data_dict['oil_pressure'], trigger_info[12][6], trigger_info[12][7])
         elif data_dict['oil_pressure'] > trigger_info[12][7]:
             ex_12 = 1
-            desc[12] = '油压为{}，高于正常范围({}~{})'.format(data_dict['oil_pressure'], trigger_info[12][6], trigger_info[12][7])
+            desc[12] = '油压为{}，高于正常范围({}~{}).'.format(data_dict['oil_pressure'], trigger_info[12][6], trigger_info[12][7])
         sensor_12_sensor = [data_dict['oil_pressure'], ex_12, update_time, d_id, 12]
 
     ex_13 = 0
     if sensor_is_available[13] == 1:  # 套压
         if data_dict['tao_pressure'] < trigger_info[13][6]:
             ex_13 = 1
-            desc[13] = '套压为{}，低于正常范围({}~{})'.format(data_dict['tao_pressure'], trigger_info[13][6], trigger_info[13][7])
+            desc[13] = '套压为{}，低于正常范围({}~{}).'.format(data_dict['tao_pressure'], trigger_info[13][6], trigger_info[13][7])
         elif data_dict['tao_pressure'] > trigger_info[13][7]:
             ex_13 = 1
-            desc[13] = '套压为{}，高于正常范围({}~{})'.format(data_dict['tao_pressure'], trigger_info[13][6], trigger_info[13][7])
+            desc[13] = '套压为{}，高于正常范围({}~{}).'.format(data_dict['tao_pressure'], trigger_info[13][6], trigger_info[13][7])
         sensor_13_sensor = [data_dict['tao_pressure'], ex_13, update_time, d_id, 13]
 
     ex_14 = 0
     if sensor_is_available[14] == 1:  # 回压
         if data_dict['hui_pressure'] < trigger_info[14][6]:
             ex_14 = 1
-            desc[14] = '回压为{}，低于正常范围({}~{})'.format(data_dict['hui_pressure'], trigger_info[14][6], trigger_info[14][7])
+            desc[14] = '回压为{}，低于正常范围({}~{}).'.format(data_dict['hui_pressure'], trigger_info[14][6], trigger_info[14][7])
         elif data_dict['hui_pressure'] > trigger_info[14][7]:
             ex_14 = 1
-            desc[14] = '回压为{}，高于正常范围({}~{})'.format(data_dict['hui_pressure'], trigger_info[14][6], trigger_info[14][7])
+            desc[14] = '回压为{}，高于正常范围({}~{}).'.format(data_dict['hui_pressure'], trigger_info[14][6], trigger_info[14][7])
         sensor_14_sensor = [data_dict['hui_pressure'], ex_14, update_time, d_id, 14]
 
     if sensor_is_available[4] == 1:  # 故障停状态,当①停电、②皮带烧ex_5、③曲棍哨子松动ex_6时，判断为故障停  ++++++++++++++++++++++++++++++++++++++++++++++++++++++

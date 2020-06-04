@@ -228,7 +228,7 @@ def trigger_add(data_dict, d_id, ssid2sid):
     sensor_08 = (d_id, ssid2sid[8], 8, '上冲程电流', alarm, 0, '数值低于X高于Y', 30, 80, 0, '数值低于30高于80', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_09 = (d_id, ssid2sid[9], 9, '下冲程电流', alarm, 0, '数值低于X高于Y', 8, 30, 0, '数值低于8高于30', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_10 = (d_id, ssid2sid[10], 10, '运行电流', alarm, 0, '数值低于X高于Y', 0, 0, 0, '数值低于0高于0', 1, 0, '', '', create_time, update_time, freq, wellid)
-    sensor_11 = (d_id, ssid2sid[11], 11, '平衡率', alarm, 0, '数值低于X高于Y', 85, 100, 0, '数值低于85%高于100%', 1, 0, '', '', create_time, update_time, freq, wellid)
+    sensor_11 = (d_id, ssid2sid[11], 11, '平衡率', alarm, 0, '数值低于X高于Y', 80, 125, 0, '数值低于80%高于125%', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_12 = (d_id, ssid2sid[12], 12, '油压', alarm, 0, '数值低于X高于Y', 0.5, 1.0, 0, '数值低于0.5高于1.0', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_13 = (d_id, ssid2sid[13], 13, '套压', alarm, 0, '数值低于X高于Y', 0, 1.5, 0, '数值低于0高于1.5', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_14 = (d_id, ssid2sid[14], 14, '回压', alarm, 0, '数值低于X高于Y', 0.5, 1.0, 0, '数值低于0.5高于1.0', 1, 0, '', '', create_time, update_time, freq, wellid)
