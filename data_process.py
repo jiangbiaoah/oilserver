@@ -365,14 +365,10 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
     if sensor_is_available[11] == 1:  # 平衡率
         if balance_rate < trigger_info[11][6]:
             ex_11 = 1
-            desc[11] = '平衡率为{}%，低于正常范围({}%~{}%).[注：{}% = ({}A / {}A) * 100%]'.format(
-                balance_rate, trigger_info[11][6], trigger_info[11][7],
-                balance_rate, data_dict['lowcurrent'], data_dict['upcurrent'])
+            desc[11] = '平衡率为{}%。上冲程电流为{}A，下冲程电流为{}A。'.format(balance_rate, data_dict['upcurrent'], data_dict['lowcurrent'])
         elif balance_rate > trigger_info[11][7]:
             ex_11 = 1
-            desc[11] = '平衡率为{}%，高于正常范围({}%~{}%).[注：{}% = ({}A / {}A) * 100%]'.format(
-                balance_rate, trigger_info[11][6], trigger_info[11][7],
-                balance_rate, data_dict['lowcurrent'], data_dict['upcurrent'])
+            desc[11] = '平衡率为{}%。上冲程电流为{}A，下冲程电流为{}A。'.format(balance_rate, data_dict['upcurrent'], data_dict['lowcurrent'])
         sensor_11_sensor = [balance_rate, ex_11, update_time, d_id, 11]
 
     ex_12 = 0
