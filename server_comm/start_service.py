@@ -4,12 +4,8 @@ import time
 import socket
 import logging
 import json
-import datetime
 
-import config
-import data_process
-import sqloperate
-
+from server_comm import config, sqloperate, data_process
 
 # 全局变量
 wechat_conns = []           # [[conn, addr, wellid], ] 保存微信的连接, addr和其控制的井id的对应关系

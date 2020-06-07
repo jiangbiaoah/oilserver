@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import pymysql
 import datetime
-import config
+from server_comm import config
 import logging
 
 

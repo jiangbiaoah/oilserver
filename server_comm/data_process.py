@@ -1,8 +1,7 @@
 # -*- coding: UTF-8 -*-
-import sqloperate
 import requests
 import datetime
-import config
+from server_comm import config, sqloperate
 import logging
 from decimal import Decimal
 import json
@@ -481,7 +480,7 @@ def decode_binary_data(data):
     dict['acstate'] = data[8]       # 交流是否有电
     dict['batlow'] = data[9]        # 电池是否电量低
     dict['wellstate'] = data[10]    # 开/关井状态
-    dict['model'] = data[11]  # 自动/手动模式
+    dict['model'] = data[11]        # 自动/手动模式
     dict['manual_switch_state'] = data[12]              # 手动开关状态
     # dict['nowcurrent'] = data[13] + 0.1 * data[14]      # 当前电流信息
     # dict['upcurrent'] = data[15] + 0.1 * data[16]       # 上死点电流信息
