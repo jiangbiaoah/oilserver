@@ -4,8 +4,9 @@ import time
 import socket
 import logging
 import json
+import decimal
 
-from server_comm import config, sqloperate, data_process
+import sqloperate, config, data_process
 
 # 全局变量
 wechat_conns = []           # [[conn, addr, wellid], ] 保存微信的连接, addr和其控制的井id的对应关系
@@ -32,6 +33,13 @@ class ServerThread(threading.Thread):
             logging.debug("------------------微信接入------------------")
             logging.debug("新线程开启服务于 微信({}：{})".format(self.addr[0], self.addr[1]))
             _conn_process_wechat(self.conn, self.addr)
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return float(o)
+        super(DecimalEncoder, self).default(o)
 
 
 def _conn_process_device(conn, addr):
@@ -141,7 +149,7 @@ def _conn_process_device(conn, addr):
                     dict_res["data"] = data_dict
 
                     # 3.使用wxapp的连接conn发送数据
-                    wechat_conn.send(bytes(json.dumps(dict_res), encoding='utf8'))
+                    wechat_conn.send(bytes(json.dumps(dict_res, cls=DecimalEncoder), encoding='utf8'))
                     logging.info("已反馈给wxapp Device {} 的数据".format(wellid))
 
                     # 4.发送反馈后执行后续处理，包括：将临时保存的连接，并且删掉微信对应的conn
@@ -193,25 +201,25 @@ def _conn_process_wechat(conn, addr):
     check_result, data = data_process.check_data(data)
     if check_result is False:
         dict_res = {"result": -8, "data": None, "info": "收到无效信息"}
-        conn.send(bytes(json.dumps(dict_res), encoding='utf8'))
+        conn.send(bytes(json.dumps(dict_res, cls=DecimalEncoder), encoding='utf8'))
         _del_wechat_conn(conn)
         # break
         return
 
     if data[0:2] == b'\xbb\xbb':  # 是用户发出的控制命令
         # logging.info("收到-wechat-的数据为：{}".format(data))
-        data_process.show_wechat_command(data)
         # =============================================================================
         # 1.转发用户控制命令
         # 1.1.提取被控设备的wellid,并记录井这次上报的信息需要反馈给wechat
         data2device, data_dict = data_process.decode_wechat_data(data)
+        data_process.show_wechat_command(data_dict)     # 显示控制命令
         wellid_controled = data_dict['wellid']
         # 检查设备是否在控制中，保证同一时刻只允许一个用户的控制
         wechat_conn = _get_wechat_conn(wellid_controled)
         if wechat_conn is not None:     # 设备正在被控制中
             logging.info("当前Device {} 正在被控制中!".format(wellid_controled))
             dict_res = {"result": -8, "data": None, "info": "当前设备正在被控制中"}
-            conn.send(bytes(json.dumps(dict_res), encoding='utf8'))
+            conn.send(bytes(json.dumps(dict_res, cls=DecimalEncoder), encoding='utf8'))
             _del_wechat_conn(conn)
             # break
             return
@@ -230,7 +238,7 @@ def _conn_process_wechat(conn, addr):
             dict_res = {}
             dict_res["result"] = -8  # 失败
             dict_res["data"] = dict
-            conn.send(bytes(json.dumps(dict_res), encoding='utf8'))
+            conn.send(bytes(json.dumps(dict_res, cls=DecimalEncoder), encoding='utf8'))
             logging.error("!!!找不到-Device{}-的conn,已向用户反馈：{}!!!".format(wellid_controled, dict_res))
             # continue
             return

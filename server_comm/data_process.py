@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import requests
 import datetime
-from server_comm import config, sqloperate
+import sqloperate, config
 import logging
 from decimal import Decimal
 import json
@@ -11,6 +11,7 @@ import re
 def start_service_inform():
     """
     服务器打开和关闭时，以报警信息通知微信
+    inform_info = [data_dict['wellid'], d_id, ssid2sid[ss_id], s_name, desc[ss_id], station_info]
     :return:
     """
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -18,6 +19,7 @@ def start_service_inform():
     notify_infos = [[0, '', 0, 0, '服务器', 0, '状态值', 0,
                      '服务器已打开', '服务器已打开', current_time]]
     inform_wechat(inform_infos, notify_infos)
+    logging.debug("已通知微信：服务器已打开")
 
 
 def stop_service_inform():
@@ -26,6 +28,7 @@ def stop_service_inform():
     notify_infos = [[0, '', 0, 0, '服务器', 0, '状态值', 0,
                      '服务器已关闭', '服务器已关闭', current_time]]
     inform_wechat(inform_infos, notify_infos)
+    logging.debug("已通知微信：服务器已关闭")
 
 
 def process_online(data):
@@ -129,8 +132,8 @@ def _device_firstonline(data_dict):
     sensor_02_sensor = (d_id, 2, '市电停来电', data_dict['acstate'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_03_sensor = (d_id, 3, '电池状态', data_dict['batlow'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_04_sensor = (d_id, 4, '故障停状态', 0, 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_05_sensor = (d_id, 5, '皮带烧', 0, 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
+    sensor_05_sensor = (d_id, 5, '皮带烧', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
+    sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['crank_pin'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_07_sensor = (d_id, 7, '设备运行态', data_dict['model'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
     sensor_09_sensor = (d_id, 9, '下冲程电流', data_dict['lowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
@@ -151,8 +154,8 @@ def _device_firstonline(data_dict):
     sensor_02_monitor = (d_id, ssid2sid[2], 2, '市电停来电', data_dict['acstate'], create_time)
     sensor_03_monitor = (d_id, ssid2sid[3], 3, '电池状态', data_dict['batlow'], create_time)
     sensor_04_monitor = (d_id, ssid2sid[4], 4, '故障停状态', 0, create_time)
-    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', 0, create_time)
-    sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['bell_exception'], create_time)
+    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', data_dict['bell_exception'], create_time)
+    sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['crank_pin'], create_time)
     sensor_07_monitor = (d_id, ssid2sid[7], 7, '设备运行态', data_dict['model'], create_time)
     sensor_08_monitor = (d_id, ssid2sid[8], 8, '上冲程电流', data_dict['upcurrent'], create_time)
     sensor_09_monitor = (d_id, ssid2sid[9], 9, '下冲程电流', data_dict['lowcurrent'], create_time)
@@ -201,8 +204,8 @@ def _device_not_firstonline(data_dict):
     sensor_02_monitor = (d_id, ssid2sid[2], 2, '市电停来电', data_dict['acstate'], create_time)
     sensor_03_monitor = (d_id, ssid2sid[3], 3, '电池状态', data_dict['batlow'], create_time)
     sensor_04_monitor = (d_id, ssid2sid[4], 4, '故障停状态', 0, create_time)
-    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', 0, create_time)
-    sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['bell_exception'], create_time)
+    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', data_dict['bell_exception'], create_time)
+    sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['crank_pin'], create_time)
     sensor_07_monitor = (d_id, ssid2sid[7], 7, '设备运行态', data_dict['model'], create_time)
     sensor_08_monitor = (d_id, ssid2sid[8], 8, '上冲程电流', data_dict['upcurrent'], create_time)
     sensor_09_monitor = (d_id, ssid2sid[9], 9, '下冲程电流', data_dict['lowcurrent'], create_time)
@@ -235,10 +238,10 @@ def _device_not_firstonline(data_dict):
     station_info = sqloperate.device_get_stationinfo(d_id)
 
     # sensor_trigger为 (value, ex, update_time, d_id, ss_id)
-    for sensor_trigger in sensor_list_sensor:   # 触发异常的条件：1.设备未标记为删除（开始阶段已处理）  2.传感器已启用  3.传感器有异常
-        if sensor_trigger[1] == 1:      # 3.传感器有异常
+    for sensor_trigger in sensor_list_sensor:   # 触发异常的条件：1.设备未标记为删除（开始阶段已处理）  2.传感器有异常  3.传感器已启用
+        if sensor_trigger[1] == 1:      # 2.传感器有异常
             ss_id = sensor_trigger[4]
-            if sensor_is_available[ss_id] == 0:     # 2. 传感器未启用 sensor表：status字段
+            if sensor_is_available[ss_id] == 0:     # 3. 传感器未启用 sensor表：status字段
                 continue
 
             s_name = trigger_info[ss_id][2]
@@ -319,15 +322,18 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
         # sensor_04_sensor = (**, *ex *, update_time, d_id, 4)
 
     ex_5 = 0
-    if sensor_is_available[5] == 1:  # 皮带烧   ？？？？？暂时无判断？？？？？？
+    if sensor_is_available[5] == 1:  # 皮带烧
+        if data_dict['bell_exception'] == trigger_info[5][6]:
+            ex_5 = 1
+            desc[5] = '皮带烧'
         sensor_05_sensor = [0, ex_5, update_time, d_id, 5]
 
     ex_6 = 0
     if sensor_is_available[6] == 1:  # 曲柄销子
-        if data_dict['bell_exception'] == trigger_info[6][6]:
+        if data_dict['crank_pin'] == trigger_info[6][6]:
             ex_6 = 1
             desc[6] = '曲柄销子松动'
-        sensor_06_sensor = [data_dict['bell_exception'], ex_6, update_time, d_id, 6]
+        sensor_06_sensor = [data_dict['crank_pin'], ex_6, update_time, d_id, 6]
 
     ex_7 = 0
     if sensor_is_available[7] == 1:  # 设备运行态：表示设备在线离线的触发条件
@@ -460,7 +466,7 @@ def check_data(data):
         return False, None
 
     # 数据符合协议要求
-    # logging.debug("数据校验成功")
+    logging.debug("数据校验成功")
     return True, data_cut
 
 
@@ -487,18 +493,19 @@ def decode_binary_data(data):
     # dict['lowcurrent'] = data[17] + 0.1 * data[18]      # 下死点电流信息
 
     # 修改：实际电流 = （采集到的电流 - 4）*100 / 16
-    dict['nowcurrent'] = Decimal((data[13] + 0.1 * data[14] - 4) * 100 / 16).quantize(Decimal('0.00'))      # 当前电流信息
-    dict['upcurrent'] = Decimal((data[15] + 0.1 * data[16] - 4) * 100 / 16).quantize(Decimal('0.00'))       # 上死点电流信息
-    dict['lowcurrent'] = Decimal((data[17] + 0.1 * data[18] - 4) * 100 / 16).quantize(Decimal('0.00'))      # 下死点电流信息
+    dict['nowcurrent'] = Decimal(5 * (float(data[13] & 63) + 0.1 * data[14]) * 100 / (1024 * 3.3)).quantize(Decimal('0.00'))      # 当前电流信息
+    dict['upcurrent'] = Decimal(5 * (float(data[15] & 63) + 0.1 * data[16]) * 100 / (1024 * 3.3)).quantize(Decimal('0.00'))       # 上死点电流信息
+    dict['lowcurrent'] = Decimal(5 * (float(data[17] & 63) + 0.1 * data[18]) * 100 / (1024 * 3.3)).quantize(Decimal('0.00'))      # 下死点电流信息
     logging.debug("收集到的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
-                  .format(data[13] + 0.1 * data[14], data[15] + 0.1 * data[16], data[17] + 0.1 * data[18]))
+                  .format(float(data[13] & 63) + 0.1 * data[14], float(data[15] & 63) + 0.1 * data[16], float(data[17] & 63) + 0.1 * data[18]))
     logging.debug("转换后的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
                   .format(dict['nowcurrent'], dict['upcurrent'], dict['lowcurrent']))
 
-    dict['bell_exception'] = data[19]                   # 曲柄销子
-    dict['oil_pressure'] = data[20] + 0.1 * data[21]    # 油压
-    dict['tao_pressure'] = data[22] + 0.1 * data[23]    # 套压
-    dict['hui_pressure'] = data[24] + 0.1 * data[25]    # 回压
+    dict['bell_exception'] = data[19]                   # 皮带烧
+    dict['crank_pin'] = data[20]                        # 曲柄销子 一种类似于螺丝的零件
+    dict['oil_pressure'] = data[21] + 0.1 * data[22]    # 油压
+    dict['tao_pressure'] = data[23] + 0.1 * data[24]    # 套压
+    dict['hui_pressure'] = data[25] + 0.1 * data[26]    # 回压
 
     # logging.debug("data_dict = {}".format(dict))
     return dict
@@ -529,18 +536,18 @@ def decode_wechat_data(data):
     return data2device, dict
 
 
-def show_wechat_command(data):
+def show_wechat_command(data_dict):
     """
     收到微信的控制命令后，模拟更新设备状态device_data
     :param data_control:
     :return:
     """
-    data_dict = {}      # 记录自典型微信控制命令
-    data_dict['function_code'] = data[2]
-    data_dict['time_interval_timer'] = (data[3], data[4])  # (hour, min) 第一个字节单位：时；第二个字节单位：分钟
-    data_dict['open_time'] = (data[5], data[6])
-    data_dict['close_time'] = (data[7], data[8])
-    data_dict['current_time'] = (data[9], data[10])
+    # data_dict = {}      # 记录典型微信控制命令
+    # data_dict['function_code'] = data[2]
+    # data_dict['time_interval_timer'] = (data[3], data[4])  # (hour, min) 第一个字节单位：时；第二个字节单位：分钟
+    # data_dict['open_time'] = (data[5], data[6])
+    # data_dict['close_time'] = (data[7], data[8])
+    # data_dict['current_time'] = (data[9], data[10])
 
     function_code = data_dict['function_code']
     logging.info("收到的控制命令为：")
@@ -616,14 +623,16 @@ def support_version_1(data):
     data_cut = re.split(b'\x55\x55', data)[0] + b'\x55\x55'
 
     if len(data_cut) != 19:
+        logging.debug("收到的不是第一版帧格式。")
         return data
 
     data_v1 = data_cut
     data_v2 = data_v1[0:2] + data_v1[2:3] + b'\x00\x00\x00' + data_v1[3:5] + data_v1[5:6] + data_v1[6:7] + \
               data_v1[7:8] + data_v1[8:9] + data_v1[9:10] + data_v1[10:12] + data_v1[12:14] + data_v1[14:16] + \
-              data_v1[16:17] + b'\x00\x05' + b'\x00\x00' + b'\x00\x05' + b'\x55\x55'
+              data_v1[16:17] + b'\x00' + b'\x00\x05' + b'\x00\x00' + b'\x00\x05' + b'\x55\x55'
     # print("data_v1 = {}".format(data_v1))
     # print("data_v2 = {}".format(data_v2))
+    logging.debug("已转换为第二版帧格式")
     return data_v2
 
 
