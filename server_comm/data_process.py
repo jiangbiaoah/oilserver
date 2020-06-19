@@ -121,7 +121,7 @@ def _device_firstonline(data_dict):
     logging.info("设备（井号{}）为第一次上线...".format(wellid))
     create_time = data_dict['reporttime']
     # 平衡率 = 下冲程电流/上冲程电流
-    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], dict['wellstate'])
+    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], data_dict['wellstate'])
 
     # device表的操作：全部填写为固定的或者默认值
     sqloperate.device_add(data_dict)
@@ -192,7 +192,7 @@ def _device_not_firstonline(data_dict):
 
     create_time = data_dict['reporttime']
     update_time = create_time
-    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], dict['wellstate'])
+    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], data_dict['wellstate'])
 
     # device表的操作：需要更新的字段有status, update_time, i_machine, h_machine
     sqloperate.device_update_status(wellid, 1)                # 1表示设备上线
@@ -280,7 +280,7 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
     :return:sensor_list_sensor, desc返回可作为sql参数的列表和对每个传感器的表述信息desc
     """
     update_time = data_dict['reporttime']
-    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], dict['wellstate'])
+    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], data_dict['wellstate'])
 
     # sensor (value, ex, update_time, d_id, ss_id)
     sensor_01_sensor = [0, 0, update_time, d_id, 1]
