@@ -120,7 +120,8 @@ def _device_firstonline(data_dict):
     wellid = data_dict['wellid']
     logging.info("设备（井号{}）为第一次上线...".format(wellid))
     create_time = data_dict['reporttime']
-    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'])  # 平衡率 = 下冲程电流/上冲程电流
+    # 平衡率 = 下冲程电流/上冲程电流
+    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], dict['wellstate'])
 
     # device表的操作：全部填写为固定的或者默认值
     sqloperate.device_add(data_dict)
@@ -191,7 +192,7 @@ def _device_not_firstonline(data_dict):
 
     create_time = data_dict['reporttime']
     update_time = create_time
-    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'])  # 平衡率 = 下冲程电流/上冲程电流
+    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], dict['wellstate'])
 
     # device表的操作：需要更新的字段有status, update_time, i_machine, h_machine
     sqloperate.device_update_status(wellid, 1)                # 1表示设备上线
@@ -279,7 +280,7 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
     :return:sensor_list_sensor, desc返回可作为sql参数的列表和对每个传感器的表述信息desc
     """
     update_time = data_dict['reporttime']
-    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'])  # 平衡率 = 下冲程电流/上冲程电流
+    balance_rate = get_balance_rate(data_dict['lowcurrent'], data_dict['upcurrent'], dict['wellstate'])
 
     # sensor (value, ex, update_time, d_id, ss_id)
     sensor_01_sensor = [0, 0, update_time, d_id, 1]
@@ -370,10 +371,12 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
     if sensor_is_available[11] == 1:  # 平衡率
         if balance_rate < trigger_info[11][6]:
             ex_11 = 1
-            desc[11] = '平衡率为{}%。上冲程电流为{}A，下冲程电流为{}A。'.format(balance_rate, data_dict['upcurrent'], data_dict['lowcurrent'])
+            desc[11] = '平衡率为{}%。上冲程电流为{}A，下冲程电流为{}A，当前电流为{}A。'.format(
+                balance_rate, data_dict['upcurrent'], data_dict['lowcurrent'], data_dict['nowcurrent'])
         elif balance_rate > trigger_info[11][7]:
             ex_11 = 1
-            desc[11] = '平衡率为{}%。上冲程电流为{}A，下冲程电流为{}A。'.format(balance_rate, data_dict['upcurrent'], data_dict['lowcurrent'])
+            desc[11] = '平衡率为{}%。上冲程电流为{}A，下冲程电流为{}A，当前电流为{}A。'.format(
+                balance_rate, data_dict['upcurrent'], data_dict['lowcurrent'], data_dict['nowcurrent'])
         sensor_11_sensor = [balance_rate, ex_11, update_time, d_id, 11]
 
     ex_12 = 0
@@ -406,11 +409,15 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
             desc[14] = '回压为{}，高于正常范围({}~{}).'.format(data_dict['hui_pressure'], trigger_info[14][6], trigger_info[14][7])
         sensor_14_sensor = [data_dict['hui_pressure'], ex_14, update_time, d_id, 14]
 
-    if sensor_is_available[4] == 1:  # 故障停状态,当①停电、②皮带烧ex_5、③曲棍哨子松动ex_6时，判断为故障停  ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    if sensor_is_available[4] == 1:  # 故障停状态,当①停电、②皮带烧ex_5、③曲柄销子松动ex_6时，判断为故障停  ++++++++++++++++++++++++++++++++++++++++++++++++++++++
         if ex_5 == 1 or ex_6 == 1:
             value_4 = 1
             ex_4 = 1
-            desc[4] = '故障停机'
+            desc[4] = '故障停机，原因：'
+            if ex_5 == 1:
+                desc[4] = desc[4] + '皮带烧 '
+            if ex_6 == 1:
+                desc[4] = desc[4] + '曲柄销子松动 '
         else:
             value_4 = 0
             ex_4 = 0
@@ -466,7 +473,7 @@ def check_data(data):
         return False, None
 
     # 数据符合协议要求
-    logging.debug("数据校验成功")
+    # logging.debug("数据校验成功")
     return True, data_cut
 
 
@@ -492,12 +499,17 @@ def decode_binary_data(data):
     # dict['upcurrent'] = data[15] + 0.1 * data[16]       # 上死点电流信息
     # dict['lowcurrent'] = data[17] + 0.1 * data[18]      # 下死点电流信息
 
-    # 修改：实际电流 = （采集到的电流 - 4）*100 / 16
-    dict['nowcurrent'] = Decimal(5 * (float(data[13] & 63) + 0.1 * data[14]) * 100 / (1024 * 3.3)).quantize(Decimal('0.00'))      # 当前电流信息
-    dict['upcurrent'] = Decimal(5 * (float(data[15] & 63) + 0.1 * data[16]) * 100 / (1024 * 3.3)).quantize(Decimal('0.00'))       # 上死点电流信息
-    dict['lowcurrent'] = Decimal(5 * (float(data[17] & 63) + 0.1 * data[18]) * 100 / (1024 * 3.3)).quantize(Decimal('0.00'))      # 下死点电流信息
+    # 修改：实际电流 = （5.09 * 采集到的电流 * 100) / (1024 * 3.3)   注：上报的电流数据为16B, 取后10位
+    nowcurrent = 5.09 * ((data[13] & 3) * 256 + data[14]) * 100 / (1024 * 3.3)
+    upcurrent = 5.09 * ((data[15] & 3) * 256 + data[16]) * 100 / (1024 * 3.3)
+    lowcurrent = 5.09 * ((data[17] & 3) * 256 + data[18]) * 100 / (1024 * 3.3)
+
+    dict['nowcurrent'] = Decimal(nowcurrent).quantize(Decimal('0.00'))      # 当前电流信息
+    dict['upcurrent'] = Decimal(upcurrent).quantize(Decimal('0.00'))   # 上死点电流信息
+    dict['lowcurrent'] = Decimal(lowcurrent).quantize(Decimal('0.00'))      # 下死点电流信息
+
     logging.debug("收集到的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
-                  .format(float(data[13] & 63) + 0.1 * data[14], float(data[15] & 63) + 0.1 * data[16], float(data[17] & 63) + 0.1 * data[18]))
+                  .format((data[13] & 3) * 256 + data[14], (data[15] & 3) * 256 + data[16], (data[17] & 3) * 256 + data[18]))
     logging.debug("转换后的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
                   .format(dict['nowcurrent'], dict['upcurrent'], dict['lowcurrent']))
 
@@ -507,7 +519,11 @@ def decode_binary_data(data):
     dict['tao_pressure'] = data[23] + 0.1 * data[24]    # 套压
     dict['hui_pressure'] = data[25] + 0.1 * data[26]    # 回压
 
-    # logging.debug("data_dict = {}".format(dict))
+    # 若井处于关闭状态，则上报的电流数据为随机值，此时在服务器端将此随机值更改为0.
+    if dict['wellstate'] == 0:
+        dict['nowcurrent'] = 0  # 当前电流信息
+        dict['upcurrent'] = 0   # 上死点电流信息
+        dict['lowcurrent'] = 0  # 下死点电流信息
     return dict
 
 
@@ -591,7 +607,7 @@ def show_wechat_command(data_dict):
         logging.info("======================================")
 
 
-def get_balance_rate(lowcurrent, upcurrent):
+def get_balance_rate(lowcurrent, upcurrent, wellstate):
     """
     # 平衡率 = 下冲程电流/上冲程电流
     :param lowcurrent:
@@ -601,6 +617,8 @@ def get_balance_rate(lowcurrent, upcurrent):
     balance_rate = 0
     if upcurrent != 0:
         balance_rate = (lowcurrent / upcurrent) * 100
+    if wellstate == 0:
+        balance_rate = 100
     res = Decimal(balance_rate).quantize(Decimal('0.00'))
     return res
 
@@ -623,7 +641,6 @@ def support_version_1(data):
     data_cut = re.split(b'\x55\x55', data)[0] + b'\x55\x55'
 
     if len(data_cut) != 19:
-        logging.debug("收到的不是第一版帧格式。")
         return data
 
     data_v1 = data_cut

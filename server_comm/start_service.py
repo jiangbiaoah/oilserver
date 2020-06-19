@@ -71,6 +71,7 @@ def _conn_process_device(conn, addr):
         # 设备第一次上线的操作：发送对时命令
         # 每个连接线程收到的第一个数据包都不会被处理，仅仅会触发服务器下发对时命令，对时命令下发后收到的报文视为第一个有用报文
         if firstonlineflag is True and need_settime is True:
+            time.sleep(4)       # 设备网络接入后，等待4秒后设备稳定了再发对时命令
             nowtime = time.localtime()
             send_data = b'\xaa\xaa\x06\x00\x00\x00\x00\x00\x00' + \
                         bytes([nowtime.tm_hour, nowtime.tm_min]) + b'\x55\x55'
@@ -94,6 +95,7 @@ def _conn_process_device(conn, addr):
 
         if data[0:2] == b'\xcc\xcc':        # 心跳包
             # logging.info("收到的是Device心跳包信息：{}".format(data))
+
             continue
         elif data[0:2] == b'\xaa\xaa':  # 传感器上报的状态信息
             # 兼容第一版帧格式
@@ -242,8 +244,27 @@ def _conn_process_wechat(conn, addr):
             logging.error("!!!找不到-Device{}-的conn,已向用户反馈：{}!!!".format(wellid_controled, dict_res))
             # continue
             return
-        device_conn.send(data2device)
-        logging.info("+++已向-Device {} -发送控制码{}".format(wellid_controled, data2device))
+
+        # 完善：向设备发送控制码后，设备可能没有正确接收控制码，导致设备无反馈信息
+        # 在此，通过重传机制提高可靠性
+        exit_flag = True
+        try_times = 0
+        while exit_flag and try_times != 3:
+            try_times = try_times + 1
+            device_conn.send(data2device)
+            logging.info("+++第{}次向-Device {} -发送控制码{}".format(try_times, wellid_controled, data2device))
+
+            time.sleep(2)
+            if _get_wechat_conn(wellid_controled) is None:
+                exit_flag = True
+            else:
+                exit_flag = False
+        if try_times == 3:
+            logging.error("无法控制设备：已尝试向设备{}发送{}次控制码，仍无法接收到设备的反馈消息！".format(wellid_controled, try_times))
+            logging.info("已将该错误返回给微信。")
+            dict_res = {"result": -8, "data": None, "info": "无法控制该设备"}
+            conn.send(bytes(json.dumps(dict_res, cls=DecimalEncoder), encoding='utf8'))
+            _del_wechat_conn(conn)
 
         # =============================================================================
         # 2.给用户返回信息
