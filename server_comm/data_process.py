@@ -136,7 +136,7 @@ def _device_firstonline(data_dict):
     sensor_02_sensor = (d_id, 2, '市电停来电', data_dict['acstate'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_03_sensor = (d_id, 3, '电池状态', data_dict['batlow'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_04_sensor = (d_id, 4, '故障停状态', 0, 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_05_sensor = (d_id, 5, '霍尔传感器状态', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
+    sensor_05_sensor = (d_id, 5, '皮带烧', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['crank_pin'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_07_sensor = (d_id, 7, '设备运行态', data_dict['model'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
@@ -158,7 +158,7 @@ def _device_firstonline(data_dict):
     sensor_02_monitor = (d_id, ssid2sid[2], 2, '市电停来电', data_dict['acstate'], create_time)
     sensor_03_monitor = (d_id, ssid2sid[3], 3, '电池状态', data_dict['batlow'], create_time)
     sensor_04_monitor = (d_id, ssid2sid[4], 4, '故障停状态', 0, create_time)
-    sensor_05_monitor = (d_id, ssid2sid[5], 5, '霍尔传感器状态', data_dict['bell_exception'], create_time)
+    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', data_dict['bell_exception'], create_time)
     sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['crank_pin'], create_time)
     sensor_07_monitor = (d_id, ssid2sid[7], 7, '设备运行态', data_dict['model'], create_time)
     sensor_08_monitor = (d_id, ssid2sid[8], 8, '上冲程电流', data_dict['upcurrent'], create_time)
@@ -208,7 +208,7 @@ def _device_not_firstonline(data_dict):
     sensor_02_monitor = (d_id, ssid2sid[2], 2, '市电停来电', data_dict['acstate'], create_time)
     sensor_03_monitor = (d_id, ssid2sid[3], 3, '电池状态', data_dict['batlow'], create_time)
     sensor_04_monitor = (d_id, ssid2sid[4], 4, '故障停状态', 0, create_time)
-    sensor_05_monitor = (d_id, ssid2sid[5], 5, '霍尔传感器状态', data_dict['bell_exception'], create_time)
+    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', data_dict['bell_exception'], create_time)
     sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['crank_pin'], create_time)
     sensor_07_monitor = (d_id, ssid2sid[7], 7, '设备运行态', data_dict['model'], create_time)
     sensor_08_monitor = (d_id, ssid2sid[8], 8, '上冲程电流', data_dict['upcurrent'], create_time)
@@ -326,10 +326,10 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
         # sensor_04_sensor = (**, *ex *, update_time, d_id, 4)
 
     ex_5 = 0
-    if sensor_is_available[5] == 1:  # 皮带烧 改为 霍尔传感器状态
+    if sensor_is_available[5] == 1:  # 皮带烧
         if data_dict['bell_exception'] == trigger_info[5][6]:
             ex_5 = 1
-            desc[5] = '霍尔传感器异常'
+            desc[5] = '皮带烧'
         sensor_05_sensor = [0, ex_5, update_time, d_id, 5]
 
     ex_6 = 0
@@ -418,7 +418,7 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
             ex_4 = 1
             desc[4] = '故障停机，原因：'
             if ex_5 == 1:
-                desc[4] = desc[4] + '霍尔传感器异常 '
+                desc[4] = desc[4] + '皮带烧 '
             if ex_6 == 1:
                 desc[4] = desc[4] + '曲柄销子松动 '
         else:

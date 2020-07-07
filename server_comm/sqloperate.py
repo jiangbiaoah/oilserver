@@ -221,7 +221,7 @@ def trigger_add(data_dict, d_id, ssid2sid):
     sensor_02 = (d_id, ssid2sid[2], 2, '市电停来电', alarm, 0, '状态值', 0, 0, 0, '市电停电或来电', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_03 = (d_id, ssid2sid[3], 3, '电池状态', alarm, 0, '状态值', 1, 0, 0, '电池电量低或正常', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_04 = (d_id, ssid2sid[4], 4, '故障停状态', alarm, 0, '状态值', 1, 0, 0, '故障停或正常', 1, 0, '', '', create_time, update_time, freq, wellid)
-    sensor_05 = (d_id, ssid2sid[5], 5, '霍尔传感器状态', alarm, 0, '状态值', 1, 0, 0, '霍尔传感器异常或正常', 1, 0, '', '', create_time, update_time, freq, wellid)
+    sensor_05 = (d_id, ssid2sid[5], 5, '皮带烧', alarm, 0, '状态值', 1, 0, 0, '皮带烧或皮带正常', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_06 = (d_id, ssid2sid[6], 6, '曲柄销子', alarm, 0, '状态值', 1, 0, 0, '曲柄销子异常或正常', 1, 0, '', '', create_time, update_time, freq, wellid)
     sensor_07 = (d_id, ssid2sid[7], 7, '设备运行态', alarm, 0, '状态值', 0, 0, 0, '设备运行态正常或异常', 0, 0, '', '', create_time, update_time, freq, wellid)
 
