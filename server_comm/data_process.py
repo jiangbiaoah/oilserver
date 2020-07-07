@@ -9,14 +9,17 @@ import re
 
 
 def start_service_inform():
+    # 此处打开关闭服务器时，报警信息中wellid为0，导致找不到此设备所在的组，因此无法通知改组的用户，需要在牛群那边完善。
+    # 在此我暂时将wellid设为15，通知此组的所有人员
     """
     服务器打开和关闭时，以报警信息通知微信
     inform_info = [data_dict['wellid'], d_id, ssid2sid[ss_id], s_name, desc[ss_id], station_info]
     :return:
     """
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    inform_infos = [[0, 0, 0, '服务器打开和关闭', '服务器已打开', [0, 0, 0]]]
-    notify_infos = [[0, '', 0, 0, '服务器', 0, '状态值', 0,
+    # inform_infos = [[0, 0, 0, '服务器打开和关闭', '服务器已打开', [0, 0, 0]]]  # 次数的第一位0先改为15，后面三行亦如此
+    inform_infos = [[15, 0, 0, '服务器打开和关闭', '服务器已打开', [0, 0, 0]]]
+    notify_infos = [[15, '', 0, 0, '服务器', 0, '状态值', 0,
                      '服务器已打开', '服务器已打开', current_time]]
     inform_wechat(inform_infos, notify_infos)
     logging.debug("已通知微信：服务器已打开")
@@ -24,8 +27,8 @@ def start_service_inform():
 
 def stop_service_inform():
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    inform_infos = [[0, 0, 0, '服务器打开和关闭', '服务器已关闭', [0, 0, 0]]]
-    notify_infos = [[0, '', 0, 0, '服务器', 0, '状态值', 0,
+    inform_infos = [[15, 0, 0, '服务器打开和关闭', '服务器已关闭', [0, 0, 0]]]
+    notify_infos = [[15, '', 0, 0, '服务器', 0, '状态值', 0,
                      '服务器已关闭', '服务器已关闭', current_time]]
     inform_wechat(inform_infos, notify_infos)
     logging.debug("已通知微信：服务器已关闭")
@@ -631,8 +634,6 @@ def support_version_1(data):
     :param data:
     :return:
     """
-    logging.info("【收到的数据为第一版帧格式】")
-
     # 1. 判断数据开始/结束字段是否符合协议要求
     flag_end = re.search(b'\x55\x55', data)
     if data[0:2] != b'\xaa\xaa' or flag_end is None:
@@ -642,9 +643,10 @@ def support_version_1(data):
     # 2. 截取第一个开始标志和结束标志中间的数据
     data_cut = re.split(b'\x55\x55', data)[0] + b'\x55\x55'
 
-    if len(data_cut) != 19:
+    if len(data_cut) != 19:     # 第一版数据帧的长度为19
         return data
 
+    logging.info("【收到的数据为第一版帧格式】")
     data_v1 = data_cut
     # data_v2 = data_v1[0:2] + data_v1[2:3] + b'\x00\x00\x00' + data_v1[3:5] + data_v1[5:6] + data_v1[6:7] + \
     #           data_v1[7:8] + data_v1[8:9] + data_v1[9:10] + data_v1[10:12] + data_v1[12:14] + data_v1[14:16] + \
