@@ -133,7 +133,7 @@ def _device_firstonline(data_dict):
     sensor_02_sensor = (d_id, 2, '市电停来电', data_dict['acstate'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_03_sensor = (d_id, 3, '电池状态', data_dict['batlow'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_04_sensor = (d_id, 4, '故障停状态', 0, 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_05_sensor = (d_id, 5, '皮带烧', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
+    sensor_05_sensor = (d_id, 5, '霍尔传感器状态', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['crank_pin'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_07_sensor = (d_id, 7, '设备运行态', data_dict['model'], 0, 0, '', '', create_time, update_time, 1, '')
     sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
@@ -155,7 +155,7 @@ def _device_firstonline(data_dict):
     sensor_02_monitor = (d_id, ssid2sid[2], 2, '市电停来电', data_dict['acstate'], create_time)
     sensor_03_monitor = (d_id, ssid2sid[3], 3, '电池状态', data_dict['batlow'], create_time)
     sensor_04_monitor = (d_id, ssid2sid[4], 4, '故障停状态', 0, create_time)
-    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', data_dict['bell_exception'], create_time)
+    sensor_05_monitor = (d_id, ssid2sid[5], 5, '霍尔传感器状态', data_dict['bell_exception'], create_time)
     sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['crank_pin'], create_time)
     sensor_07_monitor = (d_id, ssid2sid[7], 7, '设备运行态', data_dict['model'], create_time)
     sensor_08_monitor = (d_id, ssid2sid[8], 8, '上冲程电流', data_dict['upcurrent'], create_time)
@@ -205,7 +205,7 @@ def _device_not_firstonline(data_dict):
     sensor_02_monitor = (d_id, ssid2sid[2], 2, '市电停来电', data_dict['acstate'], create_time)
     sensor_03_monitor = (d_id, ssid2sid[3], 3, '电池状态', data_dict['batlow'], create_time)
     sensor_04_monitor = (d_id, ssid2sid[4], 4, '故障停状态', 0, create_time)
-    sensor_05_monitor = (d_id, ssid2sid[5], 5, '皮带烧', data_dict['bell_exception'], create_time)
+    sensor_05_monitor = (d_id, ssid2sid[5], 5, '霍尔传感器状态', data_dict['bell_exception'], create_time)
     sensor_06_monitor = (d_id, ssid2sid[6], 6, '曲柄销子', data_dict['crank_pin'], create_time)
     sensor_07_monitor = (d_id, ssid2sid[7], 7, '设备运行态', data_dict['model'], create_time)
     sensor_08_monitor = (d_id, ssid2sid[8], 8, '上冲程电流', data_dict['upcurrent'], create_time)
@@ -323,10 +323,10 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
         # sensor_04_sensor = (**, *ex *, update_time, d_id, 4)
 
     ex_5 = 0
-    if sensor_is_available[5] == 1:  # 皮带烧
+    if sensor_is_available[5] == 1:  # 皮带烧 改为 霍尔传感器状态
         if data_dict['bell_exception'] == trigger_info[5][6]:
             ex_5 = 1
-            desc[5] = '皮带烧'
+            desc[5] = '霍尔传感器异常'
         sensor_05_sensor = [0, ex_5, update_time, d_id, 5]
 
     ex_6 = 0
@@ -415,7 +415,7 @@ def _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info):
             ex_4 = 1
             desc[4] = '故障停机，原因：'
             if ex_5 == 1:
-                desc[4] = desc[4] + '皮带烧 '
+                desc[4] = desc[4] + '霍尔传感器异常 '
             if ex_6 == 1:
                 desc[4] = desc[4] + '曲柄销子松动 '
         else:
@@ -486,7 +486,9 @@ def decode_binary_data(data):
     if check_data(data) is False:
         return None
 
-    wellid = data[2] + data[3] * 2 ** 8 + data[4] * 2 ** 16 + data[5] * 2 ** 32
+    # wellid = data[2] + data[3] * 2 ** 8 + data[4] * 2 ** 16 + data[5] * 2 ** 24
+    # 新版协议中，wellid由 [组号：井号] 组成
+    wellid = (data[2] + data[3] * 2 ** 8) * 1000 + data[4] + data[5] * 2 ** 8
     dict = {}
     dict['wellid'] = wellid         # 油井编号
     dict['reporttime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -494,15 +496,15 @@ def decode_binary_data(data):
     dict['batlow'] = data[9]        # 电池是否电量低
     dict['wellstate'] = data[10]    # 开/关井状态
     dict['model'] = data[11]        # 自动/手动模式
-    dict['manual_switch_state'] = data[12]              # 手动开关状态
+    # dict['manual_switch_state'] = data[12]              # 手动开关状态
     # dict['nowcurrent'] = data[13] + 0.1 * data[14]      # 当前电流信息
     # dict['upcurrent'] = data[15] + 0.1 * data[16]       # 上死点电流信息
     # dict['lowcurrent'] = data[17] + 0.1 * data[18]      # 下死点电流信息
 
     # 修改：实际电流 = （5.09 * 采集到的电流 * 100) / (1024 * 3.3)   注：上报的电流数据为16B, 取后10位
-    nowcurrent = 5.09 * ((data[13] & 3) * 256 + data[14]) * 100 / (1024 * 3.3)
-    upcurrent = 5.09 * ((data[15] & 3) * 256 + data[16]) * 100 / (1024 * 3.3)
-    lowcurrent = 5.09 * ((data[17] & 3) * 256 + data[18]) * 100 / (1024 * 3.3)
+    nowcurrent = 5.09 * ((data[12] & 3) * 256 + data[13]) * 100 / (1024 * 3.3)
+    upcurrent = 5.09 * ((data[14] & 3) * 256 + data[15]) * 100 / (1024 * 3.3)
+    lowcurrent = 5.09 * ((data[16] & 3) * 256 + data[17]) * 100 / (1024 * 3.3)
 
     dict['nowcurrent'] = Decimal(nowcurrent).quantize(Decimal('0.00'))      # 当前电流信息
     dict['upcurrent'] = Decimal(upcurrent).quantize(Decimal('0.00'))   # 上死点电流信息
@@ -513,11 +515,11 @@ def decode_binary_data(data):
     logging.debug("转换后的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
                   .format(dict['nowcurrent'], dict['upcurrent'], dict['lowcurrent']))
 
-    dict['bell_exception'] = data[19]                   # 皮带烧
-    dict['crank_pin'] = data[20]                        # 曲柄销子 一种类似于螺丝的零件
-    dict['oil_pressure'] = data[21] + 0.1 * data[22]    # 油压
-    dict['tao_pressure'] = data[23] + 0.1 * data[24]    # 套压
-    dict['hui_pressure'] = data[25] + 0.1 * data[26]    # 回压
+    dict['bell_exception'] = data[18]                   # 皮带烧 改为 霍尔传感器状态
+    dict['crank_pin'] = data[19]                        # 曲柄销子 一种类似于螺丝的零件
+    dict['oil_pressure'] = data[20] + 0.1 * data[21]    # 油压
+    dict['tao_pressure'] = data[22] + 0.1 * data[23]    # 套压
+    dict['hui_pressure'] = data[24] + 0.1 * data[25]    # 回压
 
     # 若井处于关闭状态，则上报的电流数据为随机值，此时在服务器端将此随机值更改为0.
     if dict['wellstate'] == 0:
@@ -644,8 +646,12 @@ def support_version_1(data):
         return data
 
     data_v1 = data_cut
-    data_v2 = data_v1[0:2] + data_v1[2:3] + b'\x00\x00\x00' + data_v1[3:5] + data_v1[5:6] + data_v1[6:7] + \
-              data_v1[7:8] + data_v1[8:9] + data_v1[9:10] + data_v1[10:12] + data_v1[12:14] + data_v1[14:16] + \
+    # data_v2 = data_v1[0:2] + data_v1[2:3] + b'\x00\x00\x00' + data_v1[3:5] + data_v1[5:6] + data_v1[6:7] + \
+    #           data_v1[7:8] + data_v1[8:9] + data_v1[9:10] + data_v1[10:12] + data_v1[12:14] + data_v1[14:16] + \
+    #           data_v1[16:17] + b'\x00' + b'\x00\x05' + b'\x00\x00' + b'\x00\x05' + b'\x55\x55'
+    # 新版协议中，wellid由 [组号：井号] 组成
+    data_v2 = data_v1[0:2] + b'\x00\x00' + data_v1[2:3] + b'\x00' + data_v1[3:5] + data_v1[5:6] + data_v1[6:7] + \
+              data_v1[7:8] + data_v1[8:9] + data_v1[10:12] + data_v1[12:14] + data_v1[14:16] + \
               data_v1[16:17] + b'\x00' + b'\x00\x05' + b'\x00\x00' + b'\x00\x05' + b'\x55\x55'
     # print("data_v1 = {}".format(data_v1))
     # print("data_v2 = {}".format(data_v2))

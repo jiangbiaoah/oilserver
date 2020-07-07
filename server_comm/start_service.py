@@ -57,8 +57,9 @@ def _conn_process_device(conn, addr):
     while True:
         # 1.接收数据
         logging.info("---")
-        logging.info("正在准备接收-Device {}-的数据...".format(wellid))
+        logging.info("正在准备接收-Device {} ({}:{})-的数据...".format(wellid, addr[0], addr[1]))
         try:
+            # recv()此处有问题：当设备主动断电时，TCP连接中断，但是此处并不能捕获到异常，导致一直阻塞在此。暂未解决
             data = conn.recv(1024)
         except Exception as ex:
             # 设备连接异常断开，向微信发送提醒
@@ -66,12 +67,12 @@ def _conn_process_device(conn, addr):
             logging.debug("接收状态异常，设备下线")
             data_process.inform_on_off_line(wellid, type='offline')
             break
-        logging.info("收到device信息：{}".format(data))
+        logging.info("收到device {} ({}:{})的信息：{}".format(wellid, addr[0], addr[1], data))
 
         # 设备第一次上线的操作：发送对时命令
         # 每个连接线程收到的第一个数据包都不会被处理，仅仅会触发服务器下发对时命令，对时命令下发后收到的报文视为第一个有用报文
         if firstonlineflag is True and need_settime is True:
-            time.sleep(4)       # 设备网络接入后，等待4秒后设备稳定了再发对时命令
+            time.sleep(10)       # 设备网络接入后，等待4秒后设备稳定了再发对时命令 (4s更改为10s)
             nowtime = time.localtime()
             send_data = b'\xaa\xaa\x06\x00\x00\x00\x00\x00\x00' + \
                         bytes([nowtime.tm_hour, nowtime.tm_min]) + b'\x55\x55'
@@ -256,9 +257,9 @@ def _conn_process_wechat(conn, addr):
 
             time.sleep(2)
             if _get_wechat_conn(wellid_controled) is None:
-                exit_flag = True
-            else:
                 exit_flag = False
+            else:
+                exit_flag = True
         if try_times == 3:
             logging.error("无法控制设备：已尝试向设备{}发送{}次控制码，仍无法接收到设备的反馈消息！".format(wellid_controled, try_times))
             logging.info("已将该错误返回给微信。")
@@ -436,8 +437,9 @@ def _del_device_conn_with_wellid(wellid):
     logging.debug("准备删除该设备的未正常释放的conn连接...")
     mutex.acquire()
     for conn_temp in device_conns:
-        if conn_temp[2] == wellid:
+        if conn_temp[2] == wellid or conn_temp[2] == -1:
             # 1.关闭socket连接
+            # -1 这个连接也关闭，是因为设备连上并收到对时命令后，并没有上报数据，导致该连接一直存在
             try:
                 conn_temp[0].close()
                 logging.info("（旧连接）已关闭device的conn旧连接")
