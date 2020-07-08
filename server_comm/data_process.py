@@ -515,7 +515,7 @@ def decode_binary_data(data):
     upcurrent_rec = (data[14] & 3) * 256 + data[15]
     lowcurrent_rec = (data[16] & 3) * 256 + data[17]
 
-    # 使用最高次项为3的多项式拟合后得到的系数为 [2.05623526e-07, -9.19850131e-05, 1.60842735e-01, -2.93132682e-01]
+    # 使用最高次项为3的多项式拟合后得到的系数为 p
     p = [7.37502399e-08, -3.11228523e-05, 1.52647697e-01, 1.44826456e-03]
     nowcurrent = np.polyval(p, nowcurrent_rec)
     upcurrent = np.polyval(p, upcurrent_rec)

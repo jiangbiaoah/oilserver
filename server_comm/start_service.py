@@ -6,7 +6,9 @@ import logging
 import json
 import decimal
 
-import sqloperate, config, data_process
+import sqloperate
+import config
+import data_process
 
 # 全局变量
 wechat_conns = []           # [[conn, addr, wellid], ] 保存微信的连接, addr和其控制的井id的对应关系
@@ -53,6 +55,8 @@ def _conn_process_device(conn, addr):
     firstonlineflag = True
     need_settime = True
     latest_status = {}      # 记录设备当前的状态，包含所有上报的状态
+
+    conn.settimeout(60)
 
     while True:
         # 1.接收数据
@@ -134,7 +138,8 @@ def _conn_process_device(conn, addr):
 
             # 状态切换提醒
             if len(latest_status) != 0:
-                data_process.inform_on_off_line(wellid, type='status_switch', state_old=latest_status, state_new=data_dict)
+                data_process.inform_on_off_line(wellid, type='status_switch',
+                                                state_old=latest_status, state_new=data_dict)
             latest_status = data_dict
 
             # ========================================
@@ -220,8 +225,8 @@ def _conn_process_wechat(conn, addr):
         # 检查设备是否在控制中，保证同一时刻只允许一个用户的控制
         wechat_conn = _get_wechat_conn(wellid_controled)
         if wechat_conn is not None:     # 设备正在被控制中
-            logging.info("当前Device {} 正在被控制中!".format(wellid_controled))
-            dict_res = {"result": -8, "data": None, "info": "当前设备正在被控制中"}
+            logging.info("当前Device {} 正在被控制中！".format(wellid_controled))
+            dict_res = {"result": -8, "data": None, "info": "当前设备正在被控制中，请等待10秒后再次尝试!"}
             conn.send(bytes(json.dumps(dict_res, cls=DecimalEncoder), encoding='utf8'))
             _del_wechat_conn(conn)
             # break
@@ -333,20 +338,20 @@ def _get_wechat_conn(wellid):
 def _del_wechat_conn(conn):
     """ 3.删除
     根据所连接的conn删除相应的微信连接
-    :param wellid:
+    :param conn:
     :return:
     """
     logging.debug("准备删除wechat的conn...")
     mutex.acquire()
     for conn_temp in wechat_conns:
-        if conn_temp[0] is conn:        # ？？？is正确吗+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        if conn_temp[0] is conn:
             # 1.关闭socket连接
             conn_temp[0].close()
             try:
                 conn.close()
                 logging.debug("wechat的conn关闭成功。")
-            except Exception:
-                logging.info("conn连接关闭异常，信息如下：", Exception)
+            except Exception as ex:
+                logging.info("conn连接关闭异常，信息如下：", ex)
 
             # 2.删除保存的连接
             wechat_conns.remove(conn_temp)
@@ -405,7 +410,7 @@ def _get_device_conn(wellid):
 def _del_device_conn(conn):
     """ 3.删除
     根据所连接的conn删除相应的设备连接
-    :param wellid:
+    :param conn:
     :return:
     """
     logging.debug("准备删除设备的conn...")
@@ -416,8 +421,8 @@ def _del_device_conn(conn):
             try:
                 conn.close()
                 logging.info("已关闭device的conn连接")
-            except Exception:
-                logging.info("conn连接关闭异常，信息如下：", Exception)
+            except Exception as ex:
+                logging.info("conn连接关闭异常，信息如下：", ex)
 
             # 2.删除保存的连接
             device_conns.remove(conn_temp)
@@ -443,8 +448,8 @@ def _del_device_conn_with_wellid(wellid):
             try:
                 conn_temp[0].close()
                 logging.info("（旧连接）已关闭device的conn旧连接")
-            except Exception:
-                logging.info("conn连接关闭异常，信息如下：", Exception)
+            except Exception as ex:
+                logging.info("conn连接关闭异常，信息如下：", ex)
 
             # 2.删除保存的连接
             device_conns.remove(conn_temp)
@@ -461,7 +466,7 @@ def server_thread():
     用户在进程中开启多线程
     :return:
     """
-
+    # 每次开机都先缓存所有的wellid和deviceid的对应关系，后期使用无需每次都访问数据库
     sqloperate.update_wellid_to_deviceid()
 
     # socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -479,7 +484,7 @@ def server_thread():
         conn, addr = sock.accept()  # addr =  ('127.0.0.1', 49382)
 
         # 判断该连接类型：微信连接 or 设备连接
-        conn_type = None
+        # conn_type = None
         if addr[0] == '127.0.0.1':
             conn_type = "wechat"
             _store_wechat_conn(conn, addr)
