@@ -52,10 +52,20 @@ def process_online(data):
         _device_not_firstonline(data_dict)
 
 
+def process_offline(wellid):
+    """
+    设备离线处理：更新数据库中设备状态为离线
+    :param wellid:
+    :return:
+    """
+    if wellid is None:
+        return
+    sqloperate.device_update_status(wellid, 0)  # 0表示下线
+
+
 def inform_on_off_line(wellid, type, state_old=None, state_new=None):
     """
     设备上线/离线通知
-    两个操作：1.更改表device中的“设备运行状态status”字段   2.向微信发送上线/离线通知
     inform_infos = [[wellid, d_id, s_id, value, desc, station_info = [a,b,c]], ]
     :param data:
     :return:
@@ -77,7 +87,6 @@ def inform_on_off_line(wellid, type, state_old=None, state_new=None):
                         '设备{}上线'.format(wellid), '设备{}上线'.format(wellid), current_time]]
     elif type == 'offline':
         logging.info("------------------Device {} 下线------------------".format(wellid))
-        sqloperate.device_update_status(wellid, 0)  # 0表示下线
         inform_infos = [[wellid, 0, 0, '设备上线和离线', '设备{}下线'.format(wellid), station_info]]
         notify_infos = [[0, '', 0, wellid, '设备{}'.format(wellid), 0, '状态值', 0,
                         '设备{}下线'.format(wellid), '设备{}下线'.format(wellid), current_time]]

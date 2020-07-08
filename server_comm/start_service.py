@@ -56,20 +56,27 @@ def _conn_process_device(conn, addr):
     need_settime = True
     latest_status = {}      # 记录设备当前的状态，包含所有上报的状态
 
-    conn.settimeout(60)
+    conn.settimeout(60)     # 设置recv()的超时间隔
 
     while True:
         # 1.接收数据
         logging.info("---")
         logging.info("正在准备接收-Device {} ({}:{})-的数据...".format(wellid, addr[0], addr[1]))
         try:
-            # recv()此处有问题：当设备主动断电时，TCP连接中断，但是此处并不能捕获到异常，导致一直阻塞在此。暂未解决
             data = conn.recv(1024)
         except Exception as ex:
             # 设备连接异常断开，向微信发送提醒
-            _del_device_conn(conn)
-            logging.debug("接收状态异常，设备下线")
-            data_process.inform_on_off_line(wellid, type='offline')
+            # 此处异常断开有以下两种情况：1. 设备电源关闭  2. 设备的旧连接被新连接替代
+            conn_old = conn
+            conn_new = _get_device_conn(wellid)
+            if conn_old is conn_new:    # 情况1：设备电源关闭
+                _del_device_conn(conn)
+                logging.debug("等待接收超时，设备下线")
+                data_process.process_offline(wellid)        # 更新数据库中设备的在线状态
+                data_process.inform_on_off_line(wellid, type='offline')
+            else:                       # 情况2：设备的旧连接被新连接替代
+                _del_device_conn(conn)
+                logging.debug("设备旧连接等待超时，旧连接断开")
             break
         logging.info("收到device {} ({}:{})的信息：{}".format(wellid, addr[0], addr[1], data))
 
@@ -416,7 +423,7 @@ def _del_device_conn(conn):
     logging.debug("准备删除设备的conn...")
     mutex.acquire()
     for conn_temp in device_conns:
-        if conn_temp[0] is conn:        # ？？？is正确吗
+        if conn_temp[0] is conn:
             # 1.关闭socket连接
             try:
                 conn.close()
