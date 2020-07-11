@@ -16,7 +16,9 @@ $ sh oilappserver.sh restart
 
 ## 查看实时日志
 开启服务器后，日志文件保存在了nohup.out中，使用如下命令查看实时日志：
+
 $ cd server_comm  # 切换到nohup.out所在的目录
+
 $ tail -f nohup.out     # 实时显示服务器日志
 
 ## 文档结构如下
