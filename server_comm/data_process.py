@@ -141,21 +141,22 @@ def _device_firstonline(data_dict):
     d_id = sqloperate.deviceid_of_wellid(wellid)  # 后续对数据库的所有操作均基于d_id
 
     # sensor表的操作：增加sensor字段时，value默认正常值和ex默认正常值0字段需要判断，其它字段都固定
+    # fit_p = [0, 0, 0, 1, 0]  # p3, p2, p1, p0, p_flag 是否已拟合的标记
     update_time = create_time
-    sensor_01_sensor = (d_id, 1, '启停机', data_dict['wellstate'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_02_sensor = (d_id, 2, '市电停来电', data_dict['acstate'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_03_sensor = (d_id, 3, '电池状态', data_dict['batlow'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_04_sensor = (d_id, 4, '故障停状态', 0, 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_05_sensor = (d_id, 5, '皮带烧', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['crank_pin'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_07_sensor = (d_id, 7, '设备运行态', data_dict['model'], 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
-    sensor_09_sensor = (d_id, 9, '下冲程电流', data_dict['lowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
-    sensor_10_sensor = (d_id, 10, '运行电流', data_dict['nowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A')
-    sensor_11_sensor = (d_id, 11, '平衡率', balance_rate, 0, 0, '', '', create_time, update_time, 1, '')
-    sensor_12_sensor = (d_id, 12, '油压', data_dict['oil_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA')
-    sensor_13_sensor = (d_id, 13, '套压', data_dict['tao_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA')
-    sensor_14_sensor = (d_id, 14, '回压', data_dict['hui_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA')
+    sensor_01_sensor = (d_id, 1, '启停机', data_dict['wellstate'], 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_02_sensor = (d_id, 2, '市电停来电', data_dict['acstate'], 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_03_sensor = (d_id, 3, '电池状态', data_dict['batlow'], 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_04_sensor = (d_id, 4, '故障停状态', 0, 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_05_sensor = (d_id, 5, '皮带烧', data_dict['bell_exception'], 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_06_sensor = (d_id, 6, '曲柄销子', data_dict['crank_pin'], 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_07_sensor = (d_id, 7, '设备运行态', data_dict['model'], 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_08_sensor = (d_id, 8, '上冲程电流', data_dict['upcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A', 0, 0, 0, 1, 0)
+    sensor_09_sensor = (d_id, 9, '下冲程电流', data_dict['lowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A', 0, 0, 0, 1, 0)
+    sensor_10_sensor = (d_id, 10, '运行电流', data_dict['nowcurrent'], 0, 0, '', '', create_time, update_time, 1, 'A', 0, 0, 0, 1, 0)
+    sensor_11_sensor = (d_id, 11, '平衡率', balance_rate, 0, 0, '', '', create_time, update_time, 1, '', 0, 0, 0, 1, 0)
+    sensor_12_sensor = (d_id, 12, '油压', data_dict['oil_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA', 0, 0, 0, 1, 0)
+    sensor_13_sensor = (d_id, 13, '套压', data_dict['tao_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA', 0, 0, 0, 1, 0)
+    sensor_14_sensor = (d_id, 14, '回压', data_dict['hui_pressure'], 0, 0, '', '', create_time, update_time, 1, 'MPA', 0, 0, 0, 1, 0)
     sensor_list_sensor = [sensor_01_sensor, sensor_02_sensor, sensor_03_sensor, sensor_04_sensor,
                           sensor_05_sensor, sensor_06_sensor, sensor_07_sensor, sensor_08_sensor,
                           sensor_09_sensor, sensor_10_sensor, sensor_11_sensor, sensor_12_sensor,
@@ -243,29 +244,39 @@ def _device_not_firstonline(data_dict):
 
     # trigger_info  {ss_id:[id, ss_id, s_name, alarm, current, type, c_x, c_y, c_m, desc, status, flag, freq, d_code], }
     trigger_info = sqloperate.trigger_get(d_id)
+    # sensor_list_sensor: 报警信息集合
     sensor_list_sensor, desc = _sensor_update_isactive(d_id, data_dict, sensor_is_available, trigger_info)
     sqloperate.sensor_update(d_id, sensor_list_sensor)
 
+    # 手动模式下不报警  将报警模块放在if语句块中
+    # if data_dict['model'] == 0:     # 0自动/1手动模式
     # trigger表操作和异常报警操作：trigger表的操作暂时没写，也就是说一旦收到异常信息，不检测是否达到报警次数上限和报警频率，全都报警 +++++++++++++++++++++++++++++++++++++++++++
     alarm_required = []     # 报警信息 [[wellid, d_id, s_id, value, desc, station_info = [a,b,c]], ]
     notify_info = []        # 记录到notify表中的数据
     station_info = sqloperate.device_get_stationinfo(d_id)
 
-    # sensor_trigger为 (value, ex, update_time, d_id, ss_id)
-    for sensor_trigger in sensor_list_sensor:   # 触发异常的条件：1.设备未标记为删除（开始阶段已处理）  2.传感器有异常  3.传感器已启用
-        if sensor_trigger[1] == 1:      # 2.传感器有异常
-            ss_id = sensor_trigger[4]
-            if sensor_is_available[ss_id] == 0:     # 3. 传感器未启用 sensor表：status字段
-                continue
+    # sensor_trigger中的元素为 (value, ex, update_time, d_id, ss_id)
+    # 触发异常的条件：1.设备未标记为删除（开始阶段已处理）  2.传感器有异常  3.传感器已启用  4.设备启机wellstate  5.设备处于自动状态
+    for sensor_trigger in sensor_list_sensor:
+        # logging.debug("sensor_trigger = {}".format(sensor_trigger[1]))
+        if sensor_trigger[1] == 0:              # 2.传感器没有异常不触发
+            continue
+        ss_id = sensor_trigger[4]
+        # logging.debug("sensor_is_available[{}] = {}".format(ss_id, sensor_is_available[ss_id]))
+        if sensor_is_available[ss_id] == 0:     # 3.传感器未启用不触发 sensor表：status字段
+            continue
+        # logging.debug("wellstate = {}".format(data_dict['wellstate']))
+        if data_dict['wellstate'] == 0:         # 4.设备停机不触发 wellstate
+            continue
 
-            s_name = trigger_info[ss_id][2]
-            alarm_info = [data_dict['wellid'], d_id, ssid2sid[ss_id], s_name, desc[ss_id], station_info]
-            alarm_required.append(alarm_info)
+        s_name = trigger_info[ss_id][2]
+        alarm_info = [data_dict['wellid'], d_id, ssid2sid[ss_id], s_name, desc[ss_id], station_info]
+        alarm_required.append(alarm_info)
 
-            notify_info_temp = [ssid2sid[ss_id], s_name, d_id, wellid, '设备{}'.format(wellid),
-                                trigger_info[ss_id][0], trigger_info[ss_id][5], sensor_trigger[0],
-                                trigger_info[ss_id][9], desc[ss_id], create_time]
-            notify_info.append(notify_info_temp)
+        notify_info_temp = [ssid2sid[ss_id], s_name, d_id, wellid, '设备{}'.format(wellid),
+                            trigger_info[ss_id][0], trigger_info[ss_id][5], sensor_trigger[0],
+                            trigger_info[ss_id][9], desc[ss_id], create_time]
+        notify_info.append(notify_info_temp)
 
     # 向微信发送报警信息
     inform_wechat(alarm_required, notify_info)
@@ -508,30 +519,25 @@ def decode_binary_data(data):
     dict['acstate'] = data[8]       # 交流是否有电
     dict['batlow'] = data[9]        # 电池是否电量低
     dict['wellstate'] = data[10]    # 开/关井状态
-    dict['model'] = data[11]        # 自动/手动模式
+    dict['model'] = data[11]        # 0自动/1手动模式
     # dict['manual_switch_state'] = data[12]              # 手动开关状态
-    # dict['nowcurrent'] = data[13] + 0.1 * data[14]      # 当前电流信息
-    # dict['upcurrent'] = data[15] + 0.1 * data[16]       # 上死点电流信息
-    # dict['lowcurrent'] = data[17] + 0.1 * data[18]      # 下死点电流信息
-
-    # 修改：实际电流 = （5.09 * 采集到的电流 * 100) / (1024 * 3.3)   注：上报的电流数据为16B, 取后10位
-    # 此部分使用拟合后的公式替代
-    # nowcurrent = 5.09 * ((data[12] & 3) * 256 + data[13]) * 100 / (1024 * 3.3)
-    # upcurrent = 5.09 * ((data[14] & 3) * 256 + data[15]) * 100 / (1024 * 3.3)
-    # lowcurrent = 5.09 * ((data[16] & 3) * 256 + data[17]) * 100 / (1024 * 3.3)
-
-    nowcurrent_rec = (data[12] & 3) * 256 + data[13]
-    upcurrent_rec = (data[14] & 3) * 256 + data[15]
-    lowcurrent_rec = (data[16] & 3) * 256 + data[17]
 
     # 使用最高次项为3的多项式拟合后得到的系数为 p
-    p = [7.37502399e-08, -3.11228523e-05, 1.52647697e-01, 1.44826456e-03]
-    nowcurrent = np.polyval(p, nowcurrent_rec)
-    upcurrent = np.polyval(p, upcurrent_rec)
-    lowcurrent = np.polyval(p, lowcurrent_rec)
+    # ``p[0]*x**(N-1) + p[1]*x**(N-2) + ... + p[N-2]*x + p[N-1]``
+    d_id = sqloperate.deviceid_of_wellid(wellid)
+    pfit = sqloperate.sensor_get_pfit(d_id)     # 返回ss_id: p3, p2, p1, p0, p_flag
+    # ss_id: name 8: upcurrent, 9: lowcurrent, 10: nowcurrent, 12: oil_pressure, 13: tao_pressure, 14: hui_pressure
+    # logging.debug("wellid = {}, pfit = {}".format(wellid, pfit))
+    # p = [7.37502399e-08, -3.11228523e-05, 1.52647697e-01, 1.44826456e-03]
 
+    nowcurrent_rec = (data[12] & 3) * 256 + data[13]    # 16位取后10位
+    upcurrent_rec = (data[14] & 3) * 256 + data[15]
+    lowcurrent_rec = (data[16] & 3) * 256 + data[17]
+    nowcurrent = np.polyval(pfit[10], nowcurrent_rec)
+    upcurrent = np.polyval(pfit[8], upcurrent_rec)
+    lowcurrent = np.polyval(pfit[9], lowcurrent_rec)
     dict['nowcurrent'] = Decimal(nowcurrent).quantize(Decimal('0.00'))      # 当前电流信息
-    dict['upcurrent'] = Decimal(upcurrent).quantize(Decimal('0.00'))   # 上死点电流信息
+    dict['upcurrent'] = Decimal(upcurrent).quantize(Decimal('0.00'))        # 上死点电流信息
     dict['lowcurrent'] = Decimal(lowcurrent).quantize(Decimal('0.00'))      # 下死点电流信息
 
     logging.debug("收集到的电流  当前电流：{}, 上冲程电流：{}, 下冲程电流：{}"
@@ -541,9 +547,21 @@ def decode_binary_data(data):
 
     dict['bell_exception'] = data[18]                   # 皮带烧 改为 霍尔传感器状态
     dict['crank_pin'] = data[19]                        # 曲柄销子 一种类似于螺丝的零件
-    dict['oil_pressure'] = data[20] + 0.1 * data[21]    # 油压
-    dict['tao_pressure'] = data[22] + 0.1 * data[23]    # 套压
-    dict['hui_pressure'] = data[24] + 0.1 * data[25]    # 回压
+
+    oil_pressure_rec = data[20] + 256 * data[21]  # 油压  前八位为低字节，后八位为高字节
+    tao_pressure_rec = data[22] + 256 * data[23]  # 套压
+    hui_pressure_rec = data[24] + 256 * data[25]  # 回压
+    oil_pressure = np.polyval(pfit[12], oil_pressure_rec)
+    tao_pressure = np.polyval(pfit[13], tao_pressure_rec)
+    hui_pressure = np.polyval(pfit[14], hui_pressure_rec)
+    dict['oil_pressure'] = Decimal(oil_pressure).quantize(Decimal('0.00'))
+    dict['tao_pressure'] = Decimal(tao_pressure).quantize(Decimal('0.00'))
+    dict['hui_pressure'] = Decimal(hui_pressure).quantize(Decimal('0.00'))
+
+    logging.debug("收集到的油压  油压：{}, 套压：{}, 回压：{}"
+                  .format(oil_pressure_rec, tao_pressure_rec, hui_pressure_rec))
+    logging.debug("转换后的油压  油压：{}, 套压：{}, 回压：{}"
+                  .format(dict['oil_pressure'], dict['tao_pressure'], dict['hui_pressure']))
 
     # 若井处于关闭状态，则上报的电流数据为随机值，此时在服务器端将此随机值更改为0.
     if dict['wellstate'] == 0:
@@ -606,6 +624,7 @@ def show_wechat_command(data_dict):
     :return:
     """
     # data_dict = {}      # 记录典型微信控制命令
+    # dict['wellid'] = data[2] + data[3] * 2 ** 8 + data[4] * 2 ** 16 + data[5] * 2 ** 32
     # data_dict['function_code'] = data[2]
     # data_dict['time_interval_timer'] = (data[3], data[4])  # (hour, min) 第一个字节单位：时；第二个字节单位：分钟
     # data_dict['open_time'] = (data[5], data[6])
@@ -618,38 +637,38 @@ def show_wechat_command(data_dict):
         start = "{}:{}".format(data_dict['open_time'][0], data_dict['open_time'][1])
         end = "{}:{}".format(data_dict['close_time'][0], data_dict['close_time'][1])
         if function_code == 0:
-            logging.info("======================================")
+            logging.info("============= device {}===============".format(data_dict['wellid']))
             logging.info("== 打开定时开关井   定时：{} - {}".format(start, end))
             logging.info("======================================")
         if function_code == 1:
-            logging.info("======================================")
+            logging.info("============= device {}===============".format(data_dict['wellid']))
             logging.info("== 关闭定时开关井   定时：{} - {}".format(start, end))
             logging.info("======================================")
 
     if function_code == 2 or function_code == 3:    # 间隔上报打开/关闭
         interval = "{}:{}".format(data_dict['time_interval_timer'][0], data_dict['time_interval_timer'][1])
         if function_code == 2:
-            logging.info("======================================")
+            logging.info("============= device {}===============".format(data_dict['wellid']))
             logging.info("== 打开间隔上报     间隔：{}".format(interval))
             logging.info("======================================")
         if function_code == 3:
-            logging.info("======================================")
+            logging.info("============= device {}===============".format(data_dict['wellid']))
             logging.info("== 关闭间隔上报     间隔：{}".format(interval))
             logging.info("======================================")
 
     if function_code == 4 or function_code == 5:    # 立即开井/关井
         if function_code == 4:
-            logging.info("======================================")
+            logging.info("============= device {}===============".format(data_dict['wellid']))
             logging.info("==            立即开井                =")
             logging.info("======================================")
         if function_code == 5:
-            logging.info("======================================")
+            logging.info("============= device {}===============".format(data_dict['wellid']))
             logging.info("==            立即关井                =")
             logging.info("======================================")
 
     if function_code == 6:      # 设定时间
         current_time = "{}:{}".format(data_dict['current_time'][0], data_dict['current_time'][1])
-        logging.info("======================================")
+        logging.info("============= device {}===============".format(data_dict['wellid']))
         logging.info("==  设定时间    设置为：{}".format(current_time))
         logging.info("======================================")
 
@@ -697,8 +716,6 @@ def support_version_1(data):
     data_v2 = data_v1[0:2] + b'\x00\x00' + data_v1[2:3] + b'\x00' + data_v1[3:5] + data_v1[5:6] + data_v1[6:7] + \
               data_v1[7:8] + data_v1[8:9] + data_v1[10:12] + data_v1[12:14] + data_v1[14:16] + \
               data_v1[16:17] + b'\x00' + b'\x00\x05' + b'\x00\x00' + b'\x00\x05' + b'\x55\x55'
-    # print("data_v1 = {}".format(data_v1))
-    # print("data_v2 = {}".format(data_v2))
     logging.debug("已转换为第二版帧格式")
     return data_v2
 
@@ -711,7 +728,6 @@ def inform_wechat(alarm_info, notify_info):
     :return:
     """
     if len(alarm_info) == 0:  # 表示无报警信息
-        # logging.debug("无报警信息")
         return
 
     dict2wechat = {}
@@ -720,11 +736,9 @@ def inform_wechat(alarm_info, notify_info):
     # post请求   get请求为：response = requests.get(url, params=dict2wechat)
     url = 'https://wwstudio.vip/wx/api/v1/sendTemplate'
     response = requests.post(url, data=dict2wechat)
-    # logging.debug("报警通知返回信息：{}".format(response.text))
 
     logging.info("已向微信发送报警信息：")
     logging.info(alarm_info)
-    # logging.info(dict2wechat)
 
     # 报警信息记录到表notify
     sqloperate.notify_add(notify_info)

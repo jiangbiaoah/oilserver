@@ -267,7 +267,7 @@ def _conn_process_wechat(conn, addr):
             device_conn.send(data2device)
             logging.info("+++第{}次向-Device {} -发送控制码{}".format(try_times, wellid_controled, data2device))
 
-            time.sleep(2)
+            time.sleep(5)
             if _get_wechat_conn(wellid_controled) is None:
                 exit_flag = False
             else:

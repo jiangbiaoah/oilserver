@@ -155,8 +155,9 @@ def monitor_add(sensor_list):
 # 1.增加
 def sensor_add(sensor_list):
     sql = "INSERT INTO sensor " \
-          "(d_id, ss_id, `name`, `value`, ex, flag, other_one, other_two, create_time, update_time, status, unit) " \
-          "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+          "(d_id, ss_id, `name`, `value`, ex, flag, other_one, other_two, create_time, update_time, status, unit, " \
+          "p3, p2, p1, p0, p_flag) " \
+          "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     _cursor_execute_add_update(sql, sensor_list)
 
 
@@ -205,6 +206,16 @@ def sensor_get_ssid2sid(d_id):
     for res in result:
         ssid2sid[res[1]] = res[0]
     return ssid2sid
+
+
+# 3.查询：查询电流和电压的拟合参数
+def sensor_get_pfit(d_id):
+    pfit = {}
+    sql = "SELECT ss_id, p3, p2, p1, p0 FROM sensor WHERE d_id = %s" % d_id
+    result = _cursor_execute_get(sql)
+    for res in result:
+        pfit[res[0]] = res[1:]
+    return pfit
 
 
 # =========================================
@@ -290,16 +301,22 @@ def _cursor_execute_add_update(sql, data_list=None):
     :param data_list: 是一个列表，列表中的每一个元素必须是元组,eg:[(1,2,3), (1,2,3), (1,2,3)]
     :return:
     """
-    db = pymysql.connect(host, username, password, database_name)
-    cursor = db.cursor()
+    try:
+        db = pymysql.connect(host, username, password, database_name)
+        cursor = db.cursor()
 
-    if data_list is None:
-        cursor.execute(sql)
-    else:
-        cursor.executemany(sql, data_list)
-    db.commit()
-    # logging.debug("[ sql store successful ]")
-    db.close()
+        if data_list is None:
+            cursor.execute(sql)
+        else:
+            cursor.executemany(sql, data_list)
+        db.commit()
+        # logging.debug("[ sql store successful ]")
+    except Exception as ex:
+        db.rollback()
+        logging.error("--store failed!")
+        logging.error(ex)
+    finally:
+        db.close()
 
     # try:
     #     if data_list is None:
